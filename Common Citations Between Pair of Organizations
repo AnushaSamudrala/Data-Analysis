@@ -1,0 +1,96 @@
+/* Query that retrieves the common citations for the organizations pairs for all the applied years and their unique and non-unique ratios */
+
+Select C.Organization1 ,C.ApplicationYear1,C.Organization2,C.ApplicationYear2,
+ C.UniqueCommonCitationCount,
+ C.NonUniqueCommonCitationCount,
+ D.TotalUniqueCitatonsOrg1,
+ D.TotalNonUniqueCitatonsOrg1,
+ ROUND((C.UniqueCommonCitationCount/D.TotalUniqueCitatonsOrg1),2) as UniqueRatio,
+ ROUND((C.NonUniqueCommonCitationCount/D.TotalNonUniqueCitatonsOrg1),2) as NonUniqueRatio
+ from
+ (
+ Select Organization1 ,A.ApplicationYear1,Organization2,B.ApplicationYear2,
+ COUNT(distinct A.citation_id) as UniqueCommonCitationCount,
+ COUNT(A.citation_id) as NonUniqueCommonCitationCount
+ from 
+    (
+         SELECT
+            a1.organization as organization1 ,
+          c1.citation_id AS citation_id,
+          EXTRACT(YEAR FROM  PARSE_DATE('%F', ap1.date) )  AS ApplicationYear1
+          FROM
+            `patents-public-data.patentsview.uspatentcitation`AS c1
+          INNER JOIN
+            `patents-public-data.patentsview.rawassignee` AS a1
+          ON
+            a1.patent_id = c1.patent_id
+          INNER JOIN  `patents-public-data.patentsview.application` AS ap1
+          ON 
+            ap1.patent_id = c1.patent_id
+          where  UPPER(a1.organization) like '%ABBOTT%'  OR
+                 UPPER(a1.organization) like '%GENENTECH%' OR
+                 UPPER(a1.organization) like '%ABBOTT%'  OR
+                 UPPER(a1.organization) like '%AMGEN%' OR
+                 UPPER(a1.organization) like '%ABRAXIS BIO%' OR
+                 UPPER(a1.organization) like '%ALZA%' OR
+                 UPPER(a1.organization) like '%EASTMAN KODAK%' OR
+                 UPPER(a1.organization) like '%SANOFI%' OR
+                 UPPER(a1.organization) like '%TAKEDA PHARMA%' 
+          ) as A
+    Join
+          (
+               SELECT
+           a1.organization as organization2,
+          c1.citation_id AS citation_id,
+          EXTRACT(YEAR FROM  PARSE_DATE('%F', ap1.date) )  AS ApplicationYear2
+          FROM
+            `patents-public-data.patentsview.uspatentcitation`AS c1
+          INNER JOIN
+            `patents-public-data.patentsview.rawassignee` AS a1
+          ON
+            a1.patent_id = c1.patent_id
+          INNER JOIN  `patents-public-data.patentsview.application` AS ap1
+          ON 
+            ap1.patent_id = c1.patent_id
+          where  UPPER(a1.organization) like '%ABBOTT%'  OR
+                 UPPER(a1.organization) like '%GENENTECH%' OR
+                 UPPER(a1.organization) like '%ABBOTT%'  OR
+                 UPPER(a1.organization) like '%AMGEN%' OR
+                 UPPER(a1.organization) like '%ABRAXIS BIO%' OR
+                 UPPER(a1.organization) like '%ALZA%' OR
+                 UPPER(a1.organization) like '%EASTMAN KODAK%' OR
+                 UPPER(a1.organization) like '%SANOFI%' OR
+                 UPPER(a1.organization) like '%TAKEDA PHARMA%' 
+          ) as B
+    On A. citation_id=B. citation_id
+    group by  Organization1,A.ApplicationYear1,Organization2,B.ApplicationYear2
+    ) C
+    join  
+    (
+     SELECT
+            a1.organization as  Organization1,
+          count(distinct c1.citation_id) AS TotalUniqueCitatonsOrg1,
+          count(c1.citation_id) AS TotalNonUniqueCitatonsOrg1,
+          EXTRACT(YEAR FROM  PARSE_DATE('%F', ap1.date) )  AS ApplicationYear1
+          FROM
+            `patents-public-data.patentsview.uspatentcitation`AS c1
+          INNER JOIN
+            `patents-public-data.patentsview.rawassignee` AS a1
+          ON
+            a1.patent_id = c1.patent_id
+          INNER JOIN  `patents-public-data.patentsview.application` AS ap1
+          ON 
+            ap1.patent_id = c1.patent_id
+          where  UPPER(a1.organization) like '%ABBOTT%'  OR
+                 UPPER(a1.organization) like '%GENENTECH%' OR
+                 UPPER(a1.organization) like '%ABBOTT%'  OR
+                 UPPER(a1.organization) like '%AMGEN%' OR
+                 UPPER(a1.organization) like '%ABRAXIS BIO%' OR
+                 UPPER(a1.organization) like '%ALZA%' OR
+                 UPPER(a1.organization) like '%EASTMAN KODAK%' OR
+                 UPPER(a1.organization) like '%SANOFI%' OR
+                 UPPER(a1.organization) like '%TAKEDA PHARMA%' 
+         group by organization1,ApplicationYear1
+    ) D
+    on C.Organization1=D.Organization1 and C.ApplicationYear1=D.ApplicationYear1
+order by C.ApplicationYear1
