@@ -1,0 +1,31 @@
+/* Query retrieves the count of forward citations between Microsoft and Google for all the application years */
+
+
+The result of this query will have the following columns:
+Organization – This is the first organization which is MICROSOFT
+Organization2 – This is the second organization GOOGLE 
+PatentID – It is the ID of a patent which cites from organization (MICROSOFT) to Organization2(GOOGLE)
+ApplicationYear -  It is the year in which the patent was cited.
+ForwardCitation – It is the count of forward citations from organization (MICROSOFT) to Organization2(GOOGLE) for a particular year.
+
+
+SELECT   a1.organization,
+          'Google' as Organization2,
+          c1.citation_id as patentId,
+          EXTRACT(YEAR FROM  PARSE_DATE('%F', ap1.date))  AS ApplicationYear1,
+                    count(c1.patent_id) AS ForwardCitation
+          FROM
+            `patents-public-data.patentsview.uspatentcitation`AS c1
+          INNER JOIN
+            `patents-public-data.patentsview.rawassignee` AS a1
+          ON
+            a1.patent_id = c1.citation_id    
+          INNER JOIN
+            `patents-public-data.patentsview.rawassignee` AS a2
+          ON
+            a2.patent_id = c1.patent_id    
+          INNER JOIN  `patents-public-data.patentsview.application` AS ap1
+          ON 
+            ap1.patent_id = c1.patent_id
+          where  UPPER(a1.organization) like '%MICROSOFT%' and UPPER(a2.organization) like '%GOOGLE%'
+         group by a1.organization,c1.citation_id,EXTRACT(YEAR FROM  PARSE_DATE('%F', ap1.date))
