@@ -1,0 +1,179 @@
+//** Query that retrieves unique, non-unique & total common citations count and their ratios between two companies (Google & Microsoft) 
+for the applied years for foreign citations **//
+
+(  Select C.Organization1 ,C.ApplicationYear1,C.Organization2,C.ApplicationYear2,
+ C.UniqueCommonCitationCount,
+ C.NonUniqueCommonCitationCount,
+ D.TotalUniqueCitatonsOrg1,
+ D.TotalNonUniqueCitatonsOrg1,
+ ROUND((C.UniqueCommonCitationCount/D.TotalUniqueCitatonsOrg1),10) as UniqueRatio,
+ ROUND((C.NonUniqueCommonCitationCount/D.TotalNonUniqueCitatonsOrg1),10) as NonUniqueRatio
+ from
+ (
+ Select Organization1 ,A.ApplicationYear1,Organization2,B.ApplicationYear2,
+ COUNT(distinct A.number) as UniqueCommonCitationCount,
+ COUNT(A.number) as NonUniqueCommonCitationCount
+ from 
+    (
+    
+         SELECT
+          
+            'Microsoft' AS organization1,
+          c1.number AS number,
+          EXTRACT(YEAR FROM  PARSE_DATE('%F', ap1.date) )  AS ApplicationYear1
+          FROM
+            `patents-public-data.patentsview.foreigncitation`AS c1
+          INNER JOIN
+            `patents-public-data.patentsview.rawassignee` AS a1
+          ON
+            a1.patent_id = c1.patent_id
+          INNER JOIN  `patents-public-data.patentsview.application` AS ap1
+          ON 
+            ap1.patent_id = c1.patent_id
+          where  UPPER(a1.organization) like '%MICROSOFT%'
+         /* and EXTRACT(YEAR FROM  PARSE_DATE('%F', ap1.date) )=2001 */
+
+          ) as A
+    Join
+          (
+               SELECT
+          
+            'Google' AS organization2,
+          c1.number AS number,
+          EXTRACT(YEAR FROM  PARSE_DATE('%F', ap1.date) )  AS ApplicationYear2
+          FROM
+            `patents-public-data.patentsview.foreigncitation`AS c1
+          INNER JOIN
+            `patents-public-data.patentsview.rawassignee` AS a1
+          ON
+            a1.patent_id = c1.patent_id
+          INNER JOIN  `patents-public-data.patentsview.application` AS ap1
+          ON 
+            ap1.patent_id = c1.patent_id
+          where UPPER(a1.organization) like '%GOOGLE%'
+        /* and     EXTRACT(YEAR FROM  PARSE_DATE('%F', ap1.date) )  = 2001 */
+          ) as B
+    On A. number=B. number
+ 
+    group by  Organization1,A.ApplicationYear1,Organization2,B.ApplicationYear2
+    ) C
+    join
+    
+    (
+     SELECT
+          
+            'Microsoft' AS organization1,
+          count(distinct c1.number) AS TotalUniqueCitatonsOrg1,
+          count(c1.number) AS TotalNonUniqueCitatonsOrg1,
+          EXTRACT(YEAR FROM  PARSE_DATE('%F', ap1.date) )  AS ApplicationYear1
+          FROM
+            `patents-public-data.patentsview.foreigncitation`AS c1
+          INNER JOIN
+            `patents-public-data.patentsview.rawassignee` AS a1
+          ON
+            a1.patent_id = c1.patent_id
+          INNER JOIN  `patents-public-data.patentsview.application` AS ap1
+          ON 
+            ap1.patent_id = c1.patent_id
+          where  UPPER(a1.organization) like '%MICROSOFT%'
+         /* and EXTRACT(YEAR FROM  PARSE_DATE('%F', ap1.date) )=2001 */
+         group by organization1,ApplicationYear1
+    ) D
+    on C.Organization1=D.Organization1 and C.ApplicationYear1=D.ApplicationYear1
+where  C.ApplicationYear1=2005 and  C.ApplicationYear2 IN  
+             (
+                     Select distinct  EXTRACT(YEAR FROM  PARSE_DATE('%F', date)) as year from `patents-public-data.patentsview.application` AS ap1 
+                where  EXTRACT(YEAR FROM  PARSE_DATE('%F', date))<=2005  order by year desc    limit 10
+
+                )   /* remove both these where clauses to get data for all years*/
+order by C.ApplicationYear1,C.ApplicationYear2
+)
+UNION ALL
+(
+  Select C.Organization1 ,C.ApplicationYear1,C.Organization2,C.ApplicationYear2,
+ C.UniqueCommonCitationCount,
+ C.NonUniqueCommonCitationCount,
+ D.TotalUniqueCitatonsOrg1,
+ D.TotalNonUniqueCitatonsOrg1,
+ ROUND((C.UniqueCommonCitationCount/D.TotalUniqueCitatonsOrg1),2) as UniqueRatio,
+ ROUND((C.NonUniqueCommonCitationCount/D.TotalNonUniqueCitatonsOrg1),2) as NonUniqueRatio
+ from
+ (
+ Select Organization1 ,A.ApplicationYear1,Organization2,B.ApplicationYear2,
+ COUNT(distinct A.number) as UniqueCommonCitationCount,
+ COUNT(A.number) as NonUniqueCommonCitationCount
+ from 
+    (
+    
+         SELECT
+          
+            'Google' AS organization1,
+          c1.number AS number,
+          EXTRACT(YEAR FROM  PARSE_DATE('%F', ap1.date) )  AS ApplicationYear1
+          FROM
+            `patents-public-data.patentsview.foreigncitation`AS c1
+          INNER JOIN
+            `patents-public-data.patentsview.rawassignee` AS a1
+          ON
+            a1.patent_id = c1.patent_id
+          INNER JOIN  `patents-public-data.patentsview.application` AS ap1
+          ON 
+            ap1.patent_id = c1.patent_id
+          where  UPPER(a1.organization) like '%GOOGLE%'
+         /* and EXTRACT(YEAR FROM  PARSE_DATE('%F', ap1.date) )=2001 */
+
+          ) as A
+    Join
+          (
+               SELECT
+          
+            'Microsoft' AS organization2,
+          c1.number AS number,
+          EXTRACT(YEAR FROM  PARSE_DATE('%F', ap1.date) )  AS ApplicationYear2
+          FROM
+            `patents-public-data.patentsview.foreigncitation`AS c1
+          INNER JOIN
+            `patents-public-data.patentsview.rawassignee` AS a1
+          ON
+            a1.patent_id = c1.patent_id
+          INNER JOIN  `patents-public-data.patentsview.application` AS ap1
+          ON 
+            ap1.patent_id = c1.patent_id
+          where UPPER(a1.organization) like '%MICROSOFT%'
+        /* and     EXTRACT(YEAR FROM  PARSE_DATE('%F', ap1.date) )  = 2001 */
+          ) as B
+    On A. number=B. number
+ 
+    group by  Organization1,A.ApplicationYear1,Organization2,B.ApplicationYear2
+    ) C
+    join
+    
+    (
+     SELECT
+          
+            'Google' AS organization1,
+          count(distinct c1.number) AS TotalUniqueCitatonsOrg1,
+          count(c1.number) AS TotalNonUniqueCitatonsOrg1,
+          EXTRACT(YEAR FROM  PARSE_DATE('%F', ap1.date) )  AS ApplicationYear1
+          FROM
+            `patents-public-data.patentsview.foreigncitation`AS c1
+          INNER JOIN
+            `patents-public-data.patentsview.rawassignee` AS a1
+          ON
+            a1.patent_id = c1.patent_id
+          INNER JOIN  `patents-public-data.patentsview.application` AS ap1
+          ON 
+            ap1.patent_id = c1.patent_id
+          where  UPPER(a1.organization) like '%GOOGLE%'
+         /* and EXTRACT(YEAR FROM  PARSE_DATE('%F', ap1.date) )=2001 */
+         group by organization1,ApplicationYear1
+    ) D
+    on C.Organization1=D.Organization1 and C.ApplicationYear1=D.ApplicationYear1
+where  C.ApplicationYear1=2005 and  C.ApplicationYear2 IN  
+             (
+                     Select distinct  EXTRACT(YEAR FROM  PARSE_DATE('%F', date)) as year from `patents-public-data.patentsview.application` AS ap1 
+                where  EXTRACT(YEAR FROM  PARSE_DATE('%F', date))<=2005  order by year desc    limit 10
+
+                )   /* remove both these where clauses to get data for all years*/
+order by C.ApplicationYear1,C.ApplicationYear2
+)
